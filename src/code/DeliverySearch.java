@@ -1,5 +1,6 @@
 package code;
 
+import java.awt.*;
 import java.util.*;
 
 public class DeliverySearch extends GenericSearch{
@@ -25,7 +26,7 @@ public class DeliverySearch extends GenericSearch{
 
         ArrayList<int[]> customerLocations = new ArrayList<>();
         ArrayList<int[]> storeLocations = new ArrayList<>();
-        ArrayList<int[]> tunnelLocations = new ArrayList<>();
+        Map<Point, Point> tunnelLocations = new HashMap<>();
 
         // Parse customer locations
         for (int i = 0; i < customers.length; i += 2) {
@@ -42,10 +43,15 @@ public class DeliverySearch extends GenericSearch{
         }
 
         // Parse tunnel locations
-        for (int i = 0; i < tunnels.length; i += 2) {
-            int x = Integer.parseInt(tunnels[i]);
-            int y = Integer.parseInt(tunnels[i + 1]);
-            tunnelLocations.add(new int[]{x, y});
+        for (int i = 0; i < tunnels.length; i += 4) {
+            int x1 = Integer.parseInt(tunnels[i]);
+            int y1 = Integer.parseInt(tunnels[i + 1]);
+            Point p1 = new Point(x1, y1);
+            int x2 = Integer.parseInt(tunnels[i + 2]);
+            int y2 = Integer.parseInt(tunnels[i + 3]);
+            Point p2 = new Point(x2, y2);
+            tunnelLocations.put(p1, p2);
+            tunnelLocations.put(p2, p1);
         }
         Map<String, Integer> trafficCosts = new HashMap<>();
         String[] traffics = traffic.split(";");
@@ -82,43 +88,68 @@ public class DeliverySearch extends GenericSearch{
         ArrayList<String> paths = new ArrayList<>();
 
 
+        Map<State, State> truckProduct = new HashMap<>();
+
         for (State truck : trucks) {
+            int minCost = Integer.MAX_VALUE;
+            State bestProduct = null;
+            String bestPath = "";
             for (State product : products) {
-                System.out.println("Truck: "+ truck.getX() + "," + truck.getY());
-                System.out.println("Product: "+ product.getX() + "," + product.getY());
-                String path = path(truck, product, strategy);
-                System.out.println(path);
+                //System.out.println("Truck: "+ truck.getX() + "," + truck.getY());
+                //System.out.println("Product: "+ product.getX() + "," + product.getY());
+                String path = path(truck, product, strategy, tunnelLocations);
+                //System.out.println(path);
                 paths.add(path);
+
+                String[] pathParts = path.split(";");
+                int pathCost = Integer.parseInt(pathParts[1]);
+                if (pathCost < minCost){
+                    minCost = pathCost;
+                    bestProduct = product;
+                    bestPath = path;
+                }
             }
+            if (bestProduct != null){
+                products.remove(bestProduct);
+                truckProduct.put(truck, bestProduct);
+            }
+        }
+
+        String result = "";
+        for (Map.Entry<State, State> entry : truckProduct.entrySet()) {
+            result = "Truck at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") --> Product at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") "  +  '\n' + result;
         }
 
 
 
 
-        return "";
+        return result;
     }
 
-    public static String path(State truck, State product, Strategy strategy){
+    public static String path(State truck, State product, Strategy strategy, Map<Point, Point> tunnels){
         ArrayList<Action> actions = new ArrayList<>();
         actions.add(Action.UP);
         actions.add(Action.DOWN);
         actions.add(Action.LEFT);
         actions.add(Action.RIGHT);
-        actions.add(Action.TUNNEL);
-        DeliveryProblem problem = new DeliveryProblem(truck,actions,product);
-        String path = search(problem,strategy,1);
+        DeliveryProblem problem = new DeliveryProblem(truck,actions,product, tunnels);
+        int heurisitcType;
+        if (strategy.equals(Strategy.ASTAR1) || strategy.equals(Strategy.GREEDY1)) {
+            heurisitcType = 1;
+        }
+        else{
+            heurisitcType = 2;
+        }
+        String path = search(problem,strategy, heurisitcType);
         return path;
     }
+
+
 
     public void visualizeGrid(){
 
     }
 
 
-    public static void main(String[] args) {
-        String initialState = "5;3;2;1;3,2,3,0;1,2;2,0,1,1;";
-        String traffic = "0,1,0,0,3;0,2,0,1,0;1,0,0,0,3;1,1,0,1,1;1,1,1,0,3;1,2,0,2,0;1,2,1,1,1;2,0,1,0,1;2,1,1,1,0;2,1,2,0,1;2,2,1,2,0;2,2,2,1,0;3,0,2,0,3;3,1,2,1,2;3,1,3,0,3;3,2,2,2,0;3,2,3,1,2;4,0,3,0,0;4,1,3,1,0;4,1,4,0,2;4,2,3,2,1;4,2,4,1,2;";
 
-        solve(initialState,traffic,Strategy.DFS);
-    }
 }

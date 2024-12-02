@@ -10,12 +10,14 @@ public class DeliveryProblem {
     private ArrayList<Action> actions;
     private State goalState;
     private ArrayList<Point> visitedStates;
+    private Map<Point, Point> tunnels;
 
-    public DeliveryProblem(State initialState, ArrayList<Action> actions, State goalState) {
+    public DeliveryProblem(State initialState, ArrayList<Action> actions, State goalState, Map<Point, Point> tunnels) {
         this.initialState = initialState;
         this.actions = actions;
         this.goalState = goalState;
         this.visitedStates = new ArrayList<>();
+        this.tunnels = tunnels;
     }
 
     public boolean isGoal(State currState){
@@ -34,6 +36,7 @@ public class DeliveryProblem {
     public ArrayList<Node> expand(Node currNode, int heuristicType){
         State currState = currNode.getState();
         ArrayList<Node> children = new ArrayList<Node>();
+        int cost = 0;
 
         for (Action action : this.getActions()){
             int newX = currNode.getState().getX();
@@ -52,10 +55,15 @@ public class DeliveryProblem {
                 case RIGHT:
                     newX +=1;
                     break;
-                case TUNNEL:
-                    //TODO Implement tunnel logic
-                    newX +=1; //PLACEHOLDER
-                    break;
+            }
+            Point newPoint = new Point(newX, newY);
+            if (checkTunnel(newPoint)){
+                Point tunnelPoint = tunnels.get(newPoint);
+                newX = (int) tunnelPoint.getX();
+                newY = (int) tunnelPoint.getY();
+                action = Action.TUNNEL;
+
+                cost = Math.abs((int) newPoint.getX() - (int) tunnelPoint.getX()) + Math.abs((int) newPoint.getY() - (int) tunnelPoint.getY());
             }
 
 
@@ -64,9 +72,9 @@ public class DeliveryProblem {
             }
 
             //System.out.println("New X, New Y: " + newX + " " + newY);
-
-
-            int cost = calculateCost(currState.getX(), currState.getY(), newX, newY);
+            if (!action.equals(Action.TUNNEL)) {
+                cost = calculateCost(currState.getX(), currState.getY(), newX, newY);
+            }
 
             if (cost == 0) //Blocked Path
                 continue;
@@ -89,27 +97,29 @@ public class DeliveryProblem {
              */
             State newState = new State(currState.getGrid(), newX, newY,currState.getTrafficCosts());
 
-            if (isGoal(newState)) {
-                System.out.println("GOAL!!!!");
-            }
+
 
             Point newStatePoint = new Point(newX, newY);
 
             if (checkVisited(newStatePoint)){
                 continue;
             }
-
+            if (isGoal(newState)) {
+                //System.out.println("GOAL!!!!");
+            }
             visitedStates.add(newStatePoint);
 
             int newCost = currNode.getCost() + cost;
 
+            //System.out.println(newCost + " = " + currNode.getCost() + " + " + cost);
+
 
             int heuristic = 0;
             if (heuristicType == 1){
-                heuristic = currState.calculateHeuristic1();
+                heuristic = currState.calculateHeuristic1(goalState);
             }
             else {
-                heuristic = currState.calculateHeuristic2();
+                heuristic = currState.calculateHeuristic2(goalState);
             }
 
             Node child = new Node(newState, currNode, newCost, currNode.getDepth()+1, action, heuristic);
@@ -135,5 +145,11 @@ public class DeliveryProblem {
             }
         }
         return false;
+    }
+
+    public boolean checkTunnel(Point point){
+
+        return tunnels.containsKey(point);
+
     }
 }

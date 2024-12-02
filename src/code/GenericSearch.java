@@ -34,8 +34,10 @@ public class GenericSearch {
 
             if (problem.isGoal(currNode.getState())){
 
-                pathCost += currNode.getCost();
+                pathCost = currNode.getCost();
+                plan = "";
                 while (currNode.getParent() != null){
+                    //System.out.print("("+currNode.getState().getX()+","+currNode.getState().getY()+") ");
                     plan = currNode.getAction().name() + ", " + plan;
                     currNode = currNode.getParent();
                 }
@@ -44,7 +46,7 @@ public class GenericSearch {
 
             ArrayList<Node> children =problem.expand(currNode, heuristic);
 
-            System.out.println("children: " + children);
+           // System.out.println("children: " + children);
 
             for (Node child : children){
                 nodesExpanded++;

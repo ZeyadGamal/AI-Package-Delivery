@@ -38,13 +38,21 @@ public class State {
         return trafficCosts;
     }
 
-    public int calculateHeuristic1() {
-        //TODO Manhattan
-        return 1;
+    public int calculateHeuristic1(State goal) {
+        //System.out.println("MAN");
+        //Manhattan
+        int goalX = goal.getX();
+        int goalY = goal.getY();
+
+        return Math.abs(goalX - getX()) + Math.abs(goalY - getY());
     }
 
-    public int calculateHeuristic2() {
-        //TODO Euclidean
-        return 1;
+    public int calculateHeuristic2(State goal) {
+        //System.out.println("EUC");
+        //Euclidean
+        int goalX = goal.getX();
+        int goalY = goal.getY();
+
+        return (int) Math.sqrt(Math.pow(goalX - getX(), 2) + Math.pow(goalY - getY(), 2));
     }
 }
