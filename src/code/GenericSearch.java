@@ -14,6 +14,9 @@ public class GenericSearch {
 
      public static String search(DeliveryProblem problem, Strategy strategy, int heuristic) {
 
+
+        nodesExpanded = 0;
+
          Comparator<Node> comparator = new NodeComparator(strategy);
          PriorityQueue<Node> queue = new PriorityQueue<Node>(comparator);
 

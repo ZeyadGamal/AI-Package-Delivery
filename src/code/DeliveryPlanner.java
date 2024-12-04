@@ -42,5 +42,8 @@ public class DeliveryPlanner {
         String s = plan(initialState,traffic,"UC",false);
         System.out.println(s);
 
+        String s2 = plan(initialState,traffic,"AS1",false);
+        System.out.println(s2);
+
     }
 }

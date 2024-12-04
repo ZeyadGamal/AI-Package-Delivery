@@ -35,6 +35,8 @@ public class DeliverySearch extends GenericSearch{
             customerLocations.add(new int[]{x, y});
         }
 
+        //System.out.println(customerLocations.size());
+
         // Parse store locations
         for (int i = 0; i < stores.length; i += 2) {
             int x = Integer.parseInt(stores[i]);
@@ -84,40 +86,44 @@ public class DeliverySearch extends GenericSearch{
             products.add(product);
         }
 
+        //System.out.println(products.size());
+
         //Get Paths for each truck-product
         ArrayList<String> paths = new ArrayList<>();
 
 
         Map<State, State> truckProduct = new HashMap<>();
 
-        for (State truck : trucks) {
+        for (State product : products) {
             int minCost = Integer.MAX_VALUE;
-            State bestProduct = null;
+            State bestTruck = null;
             String bestPath = "";
-            for (State product : products) {
-                //System.out.println("Truck: "+ truck.getX() + "," + truck.getY());
-                //System.out.println("Product: "+ product.getX() + "," + product.getY());
+            for (State truck : trucks) {
+                // Calculate the path and cost for the current truck to the current product
                 String path = path(truck, product, strategy, tunnelLocations);
-                //System.out.println(path);
                 paths.add(path);
 
                 String[] pathParts = path.split(";");
                 int pathCost = Integer.parseInt(pathParts[1]);
-                if (pathCost < minCost){
+                if (pathCost < minCost) {
                     minCost = pathCost;
-                    bestProduct = product;
+                    bestTruck = truck;
                     bestPath = path;
                 }
             }
-            if (bestProduct != null){
-                products.remove(bestProduct);
-                truckProduct.put(truck, bestProduct);
+            if (bestTruck != null) {
+                // Assign the best truck to the product
+                truckProduct.put(product, bestTruck);
+
             }
         }
 
+        //System.out.println(truckProduct.size());
+
         String result = "";
         for (Map.Entry<State, State> entry : truckProduct.entrySet()) {
-            result = "Truck at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") --> Product at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") "  +  '\n' + result;
+            String path = path(entry.getValue(), entry.getKey(), strategy, tunnelLocations);
+            result = "Truck at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") --> Product at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") "  + path +  '\n' + result;
         }
 
 
