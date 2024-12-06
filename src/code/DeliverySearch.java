@@ -3,13 +3,13 @@ package code;
 import java.awt.*;
 import java.util.*;
 
-public class DeliverySearch extends GenericSearch{
+public class DeliverySearch extends GenericSearch {
 
     public DeliverySearch() {
         super();
     }
 
-    public static String solve(String initalState, String traffic, Strategy strategy){
+    public static String solve(String initalState, String traffic, Strategy strategy) {
 
         //parse the input grid string
 
@@ -57,7 +57,7 @@ public class DeliverySearch extends GenericSearch{
         }
         Map<String, Integer> trafficCosts = new HashMap<>();
         String[] traffics = traffic.split(";");
-        for (String t: traffics){
+        for (String t : traffics) {
             String[] trafficData = t.split(",");
             String key1 = trafficData[0] + "," + trafficData[1] + "->" + trafficData[2] + "," + trafficData[3];
             String key2 = trafficData[2] + "," + trafficData[3] + "->" + trafficData[0] + "," + trafficData[1];
@@ -67,13 +67,12 @@ public class DeliverySearch extends GenericSearch{
         }
 
 
-
         //Trucks states
         ArrayList<State> trucks = new ArrayList<>();
         for (int[] storeLocation : storeLocations) {
             int x = storeLocation[0];
             int y = storeLocation[1];
-            State truck = new State(grid, x, y,trafficCosts);
+            State truck = new State(grid, x, y, trafficCosts);
             trucks.add(truck);
         }
 
@@ -82,7 +81,7 @@ public class DeliverySearch extends GenericSearch{
         for (int[] customerLocation : customerLocations) {
             int x = customerLocation[0];
             int y = customerLocation[1];
-            State product = new State(grid, x, y,trafficCosts);
+            State product = new State(grid, x, y, trafficCosts);
             products.add(product);
         }
 
@@ -102,6 +101,10 @@ public class DeliverySearch extends GenericSearch{
                 // Calculate the path and cost for the current truck to the current product
                 String path = path(truck, product, strategy, tunnelLocations);
                 paths.add(path);
+
+                if (path.equals("Fail")){
+                    return "Fail";
+                }
 
                 String[] pathParts = path.split(";");
                 int pathCost = Integer.parseInt(pathParts[1]);
@@ -123,39 +126,39 @@ public class DeliverySearch extends GenericSearch{
         String result = "";
         for (Map.Entry<State, State> entry : truckProduct.entrySet()) {
             String path = path(entry.getValue(), entry.getKey(), strategy, tunnelLocations);
-            result = "Truck at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") --> Product at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") "  + path +  '\n' + result;
+            result = "Truck at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") --> Product at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") " + path + '\n' + result;
         }
-
-
 
 
         return result;
     }
 
-    public static String path(State truck, State product, Strategy strategy, Map<Point, Point> tunnels){
+    public static String path(State truck, State product, Strategy strategy, Map<Point, Point> tunnels) {
         ArrayList<Action> actions = new ArrayList<>();
         actions.add(Action.UP);
         actions.add(Action.DOWN);
         actions.add(Action.LEFT);
         actions.add(Action.RIGHT);
-        DeliveryProblem problem = new DeliveryProblem(truck,actions,product, tunnels);
+        DeliveryProblem problem = new DeliveryProblem(truck, actions, product, tunnels);
         int heurisitcType;
         if (strategy.equals(Strategy.ASTAR1) || strategy.equals(Strategy.GREEDY1)) {
             heurisitcType = 1;
-        }
-        else{
+        } else {
             heurisitcType = 2;
         }
-        String path = search(problem,strategy, heurisitcType);
+        String path = "";
+        if (strategy == Strategy.IDS) {
+            path = searchIDS(problem, heurisitcType);
+        } else {
+            path = search(problem, strategy, heurisitcType);
+        }
         return path;
     }
 
 
-
-    public void visualizeGrid(){
+    public void visualizeGrid() {
 
     }
-
 
 
 }
