@@ -127,7 +127,11 @@ public class DeliverySearch extends GenericSearch {
         for (Map.Entry<State, State> entry : truckProduct.entrySet()) {
             String path = path(entry.getValue(), entry.getKey(), strategy, tunnelLocations);
             result = "Truck at (" + entry.getValue().getX() + "," + entry.getValue().getY() + ") --> Product at (" + entry.getKey().getX() + "," + entry.getKey().getY() + ") " + path + '\n' + result;
+
+
+
         }
+
 
 
         return result;
@@ -156,9 +160,8 @@ public class DeliverySearch extends GenericSearch {
     }
 
 
-    public void visualizeGrid() {
-
-    }
 
 
 }
+
+
