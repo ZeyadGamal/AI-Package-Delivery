@@ -184,6 +184,7 @@ public class HighlightGrid extends JFrame {
                     g2d.drawLine(startX, startY, startX + cellWidth, startY);
                     startX += cellWidth;
                 } else if (action.equals("TUNNEL")) {
+                    System.out.println("TunnelFound");
                     Point currentPoint = new Point(x, y);
                     if (tunnels.containsKey(currentPoint)) {
                         Point exitPoint = tunnels.get(currentPoint);
@@ -207,7 +208,7 @@ public class HighlightGrid extends JFrame {
     public static void main(String[] args) {
         // Example usage:
         List<String[]> bordersData = List.of(
-                new String[]{"0", "0", "UP", "RIGHT", "TUNNEL"}, // Tunnels to 3,3
+                new String[]{"0", "3", "UP", "TUNNEL", "RIGHT"}, // Tunnels to 3,3
                 new String[]{"2", "2", "DOWN", "LEFT"}          // Basic path
         );
 

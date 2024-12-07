@@ -121,7 +121,7 @@ public class DeliverySearch extends GenericSearch {
             }
         }
 
-        //System.out.println(truckProduct.size());
+        // System.out.println(truckProduct.size());
 
         String result = "";
         for (Map.Entry<State, State> entry : truckProduct.entrySet()) {

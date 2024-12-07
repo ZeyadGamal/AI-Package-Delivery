@@ -38,6 +38,26 @@ public class DeliveryProblem {
         ArrayList<Node> children = new ArrayList<Node>();
         int cost = 0;
 
+        Point currPoint = new Point(currState.getX(), currState.getY());
+        if (checkTunnel(currPoint)){
+            Point tunnelExit = tunnels.get(currPoint);
+            int tunnelExitX = (int) tunnelExit.getX();
+            int tunnelExitY = (int) tunnelExit.getY();
+
+            State tunnelExitState = new State(currState.getGrid(), tunnelExitX, tunnelExitY, currState.getTrafficCosts());
+            int tunnelCost = Math.abs(currState.getX() - tunnelExitX) + Math.abs(currState.getY() - tunnelExitY);
+
+            if (!checkVisited(tunnelExit)){
+                int exitCost = currNode.getCost() + tunnelCost;
+                int heuristic = (heuristicType == 1) ? currState.calculateHeuristic1(goalState) : currState.calculateHeuristic2(goalState);
+                Node tunnelExitNode = new Node(tunnelExitState, currNode, exitCost, currNode.getDepth() + 1, Action.TUNNEL, heuristic);
+                children.add(tunnelExitNode);
+                visitedStates.add(tunnelExit);
+
+            }
+        }
+
+
         for (Action action : this.getActions()){
             int newX = currNode.getState().getX();
             int newY = currNode.getState().getY();
@@ -66,14 +86,17 @@ public class DeliveryProblem {
             if (cost == 0) //Blocked Path
                 continue;
 
-            if (checkTunnel(newPoint)){
-                Point tunnelPoint = tunnels.get(newPoint);
-                newX = (int) tunnelPoint.getX();
-                newY = (int) tunnelPoint.getY();
-                action = Action.TUNNEL;
-
-                cost = Math.abs((int) newPoint.getX() - (int) tunnelPoint.getX()) + Math.abs((int) newPoint.getY() - (int) tunnelPoint.getY());
-            }
+//            if (checkTunnel(newPoint)){
+//
+//                Point tunnelPoint = tunnels.get(newPoint);
+//                newX = (int) tunnelPoint.getX();
+//                newY = (int) tunnelPoint.getY();
+//                action = Action.TUNNEL;
+//
+//
+//
+//                cost = Math.abs((int) newPoint.getX() - (int) tunnelPoint.getX()) + Math.abs((int) newPoint.getY() - (int) tunnelPoint.getY());
+//            }
 
 
 

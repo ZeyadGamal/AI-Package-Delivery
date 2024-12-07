@@ -17,6 +17,7 @@ public class GenericSearch {
 
 
         nodesExpanded = 0;
+        pathCost = 0;
 
         Comparator<Node> comparator = new NodeComparator(strategy);
         PriorityQueue<Node> queue = new PriorityQueue<Node>(comparator);
