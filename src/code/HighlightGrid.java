@@ -3,6 +3,7 @@ package code;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.*;
 import java.util.List;
 
 public class HighlightGrid extends JFrame {
@@ -10,19 +11,24 @@ public class HighlightGrid extends JFrame {
     private int rows; // Number of rows (cell rows, not points)
     private int cols; // Number of columns (cell columns, not points)
     private JPanel gridPanel;
+    private List<String[]> bordersData; // Path data
+    private Map<Point, Point> tunnels; // Map to store tunnel connections
+    private int currentPathIndex = 0; // Tracks which path is being shown
 
     /**
      * Constructor that creates a grid of (N+1)x(M+1) intersection points and highlights specified borders.
      *
-     * @param rows       Number of rows in the grid (cells, so points = rows + 1).
-     * @param cols       Number of columns in the grid (cells, so points = cols + 1).
-     * @param bordersData List of border specifications. Each entry specifies:
-     *                   [x, y, "UP"/"DOWN"/"LEFT"/"RIGHT"] for specific borders,
-     *                   or [x1, y1, "TUNNEL", x2, y2] for drawing a straight line between points.
+     * @param rows        Number of rows in the grid (cells, so points = rows + 1).
+     * @param cols        Number of columns in the grid (cells, so points = cols + 1).
+     * @param bordersData List of path specifications. Each entry specifies:
+     *                    [x, y, "ACTION1", "ACTION2", ...].
+     * @param tunnelArray Array of tunnels in the format "x1,y1;x2,y2".
      */
-    public HighlightGrid(int rows, int cols, List<String[]> bordersData) {
-        this.rows = rows-1;
-        this.cols = cols-1;
+    public HighlightGrid(int rows, int cols, List<String[]> bordersData, String[] tunnelArray) {
+        this.rows = rows;
+        this.cols = cols;
+        this.bordersData = bordersData;
+        this.tunnels = parseTunnels(tunnelArray);
 
         setTitle("Grid with Highlighted Borders and Tunnels");
         setSize(800, 800);
@@ -36,21 +42,75 @@ public class HighlightGrid extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                drawGrid(g, bordersData);
+                drawGrid(g); // Always draw the grid
+                if (currentPathIndex < bordersData.size()) {
+                    drawPath(g, bordersData.get(currentPathIndex)); // Draw the current path
+                }
             }
         };
 
         gridPanel.setBorder(new EmptyBorder(40, 40, 40, 40)); // Padding around the grid (40px on all sides)
         add(gridPanel, BorderLayout.CENTER);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        // Previous button
+        JButton prevButton = new JButton("Previous");
+        prevButton.addActionListener(e -> {
+            currentPathIndex--;
+            if (currentPathIndex < 0) {
+                currentPathIndex = bordersData.size() - 1; // Wrap to the last path
+            }
+            repaint(); // Refresh the panel
+        });
+        buttonPanel.add(prevButton);
+
+        // Next button
+        JButton nextButton = new JButton("Next");
+        nextButton.addActionListener(e -> {
+            currentPathIndex++;
+            if (currentPathIndex >= bordersData.size()) {
+                currentPathIndex = 0; // Wrap to the first path
+            }
+            repaint(); // Refresh the panel
+        });
+        buttonPanel.add(nextButton);
+
+        // Add button panel to the frame
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     /**
-     * Draws the grid and highlights the specified borders and tunnels.
+     * Parses the tunnel array and creates a bidirectional map of tunnel entrances and exits.
      *
-     * @param g           Graphics object to draw the grid.
-     * @param bordersData List of border specifications.
+     * @param tunnelArray Array of tunnels in the format "x1,y1;x2,y2".
+     * @return A map where each key is an entrance and each value is the corresponding exit.
      */
-    private void drawGrid(Graphics g, List<String[]> bordersData) {
+    private Map<Point, Point> parseTunnels(String[] tunnelArray) {
+        Map<Point, Point> tunnelMap = new HashMap<>();
+        for (String tunnel : tunnelArray) {
+            String[] points = tunnel.split(";");
+            String[] start = points[0].split(",");
+            String[] end = points[1].split(",");
+
+            Point entrance = new Point(Integer.parseInt(start[0]), Integer.parseInt(start[1]));
+            Point exit = new Point(Integer.parseInt(end[0]), Integer.parseInt(end[1]));
+
+            // Add bidirectional mapping
+            tunnelMap.put(entrance, exit);
+            tunnelMap.put(exit, entrance);
+        }
+        return tunnelMap;
+    }
+
+    /**
+     * Draws the grid with dotted borders and intersection points.
+     *
+     * @param g Graphics object to draw the grid.
+     */
+    private void drawGrid(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         int panelWidth = gridPanel.getWidth();
         int panelHeight = gridPanel.getHeight();
@@ -78,74 +138,85 @@ public class HighlightGrid extends JFrame {
                 if (j < pointCols - 1) g2d.drawLine(x, y, x + cellWidth, y); // Right
             }
         }
+    }
 
-        // Highlight specified borders and tunnels
-        g2d.setColor(Color.RED);
-        g2d.setStroke(new BasicStroke(3)); // Bold red stroke for highlighted borders
-        for (String[] borderSpec : bordersData) {
-            try {
-                if (borderSpec.length == 3) { // Standard borders (UP, DOWN, LEFT, RIGHT)
-                    int x = Integer.parseInt(borderSpec[0]);
-                    int y = Integer.parseInt(borderSpec[1]);
-                    String direction = borderSpec[2].toUpperCase();
+    /**
+     * Draws a single path based on the actions specified in bordersData.
+     *
+     * @param g    Graphics object to draw the path.
+     * @param spec The path specification: [x, y, "ACTION1", "ACTION2", ...].
+     */
+    private void drawPath(Graphics g, String[] spec) {
+        Graphics2D g2d = (Graphics2D) g;
+        int panelWidth = gridPanel.getWidth();
+        int panelHeight = gridPanel.getHeight();
 
-                    int startX = x * cellWidth + 40; // Adjust for left padding
-                    int startY = (pointRows - 1 - y) * cellHeight + 40; // Flip y-axis and adjust for top padding
+        int pointRows = rows + 1;
+        int pointCols = cols + 1;
 
-                    switch (direction) {
-                        case "UP":
-                            g2d.drawLine(startX, startY, startX, startY - cellHeight);
-                            break;
-                        case "DOWN":
-                            g2d.drawLine(startX, startY, startX, startY + cellHeight);
-                            break;
-                        case "LEFT":
-                            g2d.drawLine(startX, startY, startX - cellWidth, startY);
-                            break;
-                        case "RIGHT":
-                            g2d.drawLine(startX, startY, startX + cellWidth, startY);
-                            break;
-                        default:
-                            System.out.println("Invalid direction: " + direction);
+        // Calculate spacing between points
+        int cellWidth = (panelWidth - 80) / (pointCols);
+        int cellHeight = (panelHeight - 80) / (pointRows);
+
+        try {
+            int x = Integer.parseInt(spec[0]);
+            int y = Integer.parseInt(spec[1]);
+
+            int startX = x * cellWidth + 40;
+            int startY = (pointRows - 1 - y) * cellHeight + 40;
+
+            g2d.setColor(Color.RED);
+            g2d.setStroke(new BasicStroke(3)); // Bold red stroke for paths
+
+            for (int i = 2; i < spec.length; i++) {
+                String action = spec[i].toUpperCase();
+
+                if (action.equals("UP")) {
+                    g2d.drawLine(startX, startY, startX, startY - cellHeight);
+                    startY -= cellHeight;
+                } else if (action.equals("DOWN")) {
+                    g2d.drawLine(startX, startY, startX, startY + cellHeight);
+                    startY += cellHeight;
+                } else if (action.equals("LEFT")) {
+                    g2d.drawLine(startX, startY, startX - cellWidth, startY);
+                    startX -= cellWidth;
+                } else if (action.equals("RIGHT")) {
+                    g2d.drawLine(startX, startY, startX + cellWidth, startY);
+                    startX += cellWidth;
+                } else if (action.equals("TUNNEL")) {
+                    Point currentPoint = new Point(x, y);
+                    if (tunnels.containsKey(currentPoint)) {
+                        Point exitPoint = tunnels.get(currentPoint);
+                        int endX = exitPoint.x * cellWidth + 40;
+                        int endY = (pointRows - 1 - exitPoint.y) * cellHeight + 40;
+                        g2d.drawLine(startX, startY, endX, endY);
+                        x = exitPoint.x;
+                        y = exitPoint.y;
+                        startX = endX;
+                        startY = endY;
                     }
-                } else if (borderSpec.length == 5 && borderSpec[2].equalsIgnoreCase("TUNNEL")) { // TUNNEL
-                    int x1 = Integer.parseInt(borderSpec[0]);
-                    int y1 = Integer.parseInt(borderSpec[1]);
-                    int x2 = Integer.parseInt(borderSpec[3]);
-                    int y2 = Integer.parseInt(borderSpec[4]);
-
-                    int startX = x1 * cellWidth + 40;
-                    int startY = (pointRows - 1 - y1) * cellHeight + 40;
-                    int endX = x2 * cellWidth + 40;
-                    int endY = (pointRows - 1 - y2) * cellHeight + 40;
-
-                    g2d.drawLine(startX, startY, endX, endY);
                 } else {
-                    System.out.println("Invalid border specification: " + String.join(", ", borderSpec));
+                    System.out.println("Invalid action: " + action);
                 }
-            } catch (Exception e) {
-                System.out.println("Invalid border specification: " + String.join(", ", borderSpec));
             }
+        } catch (Exception e) {
+            System.out.println("Invalid specification: " + String.join(", ", spec));
         }
     }
 
     public static void main(String[] args) {
         // Example usage:
-        // Highlight borders and tunnels. Each border is specified as [x, y, "UP"/"DOWN"/"LEFT"/"RIGHT"]
-        // or [x1, y1, "TUNNEL", x2, y2].
         List<String[]> bordersData = List.of(
-                new String[]{"0", "0", "UP"},         // Bottom-left border (0,0), "UP"
-                new String[]{"1", "1", "RIGHT"},     // Border to the right of (1,1)
-                new String[]{"2", "2", "DOWN"},      // Border below (2,2)
-                new String[]{"3", "3", "LEFT"},      // Border to the left of (3,3)
-                new String[]{"0", "0", "TUNNEL", "3", "3"}, // Tunnel from (0,0) to (3,3)
-                new String[]{"1", "3", "TUNNEL", "3", "1"}  // Tunnel from (1,3) to (3,1)
+                new String[]{"0", "0", "UP", "RIGHT", "TUNNEL"}, // Tunnels to 3,3
+                new String[]{"2", "2", "DOWN", "LEFT"}          // Basic path
         );
 
-        // Create a grid with 4 rows and 4 columns (so 5x5 intersection points)
+        String[] tunnelArray = {"0,0;3,3", "1,1;2,2"}; // Multiple bidirectional tunnels
+
         SwingUtilities.invokeLater(() -> {
-            HighlightGrid frame = new HighlightGrid(4, 8, bordersData);
+            HighlightGrid frame = new HighlightGrid(4, 4, bordersData, tunnelArray);
             frame.setVisible(true);
         });
     }
 }
+
