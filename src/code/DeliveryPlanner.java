@@ -55,7 +55,7 @@ public class DeliveryPlanner {
 //        System.out.println(s);
 
 
-        String s2 = plan(initialState,traffic,"AS1",false);
+        String s2 = plan(initialState,traffic,"ID",false);
         System.out.println(s2);
 
 

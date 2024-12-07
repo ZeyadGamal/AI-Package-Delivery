@@ -36,7 +36,7 @@ public class GenericSearch {
 
 
             if (problem.isGoal(currNode.getState())) {
-                System.out.println("Depth of Goal: " + currNode.getDepth());
+                //System.out.println("Depth of Goal: " + currNode.getDepth());
                 pathCost = currNode.getCost();
                 plan = "";
                 while (currNode.getParent() != null) {
